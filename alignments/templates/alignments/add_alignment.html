@@ -1,0 +1,101 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Alignment | D&amp;A Hauliers Ltd{% endblock %}
+
+{% block content %}
+{% load static %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="aligner-banner">
+            <img src="{% static 'alignments/img/josam-aligner.jpg' %}" alt="JOSAM CAM Aligner">
+            <div class="aligner-text">
+                <div class="fw-semibold">Logged with the JOSAM CAM Aligner</div>
+                <small>D&amp;A Hauliers Ltd &mdash; fleet alignment equipment</small>
+            </div>
+        </div>
+        <div class="card form-card">
+            <div class="card-header">
+                <i class="bi bi-wrench-adjustable"></i>
+                {% if is_edit %}
+                    Edit Alignment &mdash; {{ alignment.truck_id }}
+                {% else %}
+                    New Alignment Record
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.truck_id.id_for_label }}" class="form-label">Truck ID *</label>
+                            {{ form.truck_id }}
+                            {% for error in form.truck_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.trailer_id.id_for_label }}" class="form-label">Trailer ID</label>
+                            {{ form.trailer_id }}
+                            {% for error in form.trailer_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.alignment_date.id_for_label }}" class="form-label">Alignment Date *</label>
+                            {{ form.alignment_date }}
+                            {% for error in form.alignment_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.alignment_time.id_for_label }}" class="form-label">Alignment Time *</label>
+                            {{ form.alignment_time }}
+                            {% for error in form.alignment_time.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.mileage.id_for_label }}" class="form-label">Mileage *</label>
+                            {{ form.mileage }}
+                            {% for error in form.mileage.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.tech_name.id_for_label }}" class="form-label">Technician Name *</label>
+                            {{ form.tech_name }}
+                            {% for error in form.tech_name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i>
+                            {% if is_edit %}Save Changes{% else %}Save Alignment{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="truck-trailer-map" type="application/json">{{ truck_trailer_map_json|safe }}</script>
+<script>
+    (function () {
+        var mapEl = document.getElementById('truck-trailer-map');
+        var map = {};
+        try { map = JSON.parse(mapEl.textContent); } catch (e) { map = {}; }
+
+        var truckSelect = document.getElementById('id_truck_id');
+        var trailerInput = document.getElementById('id_trailer_id');
+
+        function autofillTrailer() {
+            var selected = truckSelect.value;
+            if (map.hasOwnProperty(selected) && map[selected]) {
+                trailerInput.value = map[selected];
+            }
+        }
+
+        if (truckSelect && trailerInput) {
+            truckSelect.addEventListener('change', autofillTrailer);
+        }
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}Dashboard | D&amp;A Hauliers Ltd{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">D&amp;A Hauliers &mdash; Fleet Alignment Dashboard</h2>
+        <p class="text-muted mb-0">Overview of truck alignment activity and trends</p>
+    </div>
+    <a href="{% url 'add_alignment' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Alignment
+    </a>
+</div>
+
+<!-- Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="metric-card card-blue">
+            <div class="metric-icon"><i class="bi bi-clipboard2-data"></i></div>
+            <div>
+                <div class="metric-value">{{ total_alignments }}</div>
+                <div class="metric-label">Total Alignments</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="metric-card card-green">
+            <div class="metric-icon"><i class="bi bi-calendar-check"></i></div>
+            <div>
+                <div class="metric-value">{{ this_month_count }}</div>
+                <div class="metric-label">This Month</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="metric-card card-red">
+            <div class="metric-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <div class="metric-value">{{ overdue_trucks }}</div>
+                <div class="metric-label">Overdue Trucks (&gt;90 days)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="metric-card card-orange">
+            <div class="metric-icon"><i class="bi bi-speedometer"></i></div>
+            <div>
+                <div class="metric-value">{{ avg_mileage }}</div>
+                <div class="metric-label">Average Mileage</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card chart-card h-100">
+            <div class="card-header">
+                <i class="bi bi-person-badge"></i> Alignments by Technician
+            </div>
+            <div class="card-body">
+                <canvas id="techChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card h-100">
+            <div class="card-header">
+                <i class="bi bi-truck"></i> Alignments by Truck (Top 10)
+            </div>
+            <div class="card-body">
+                <canvas id="truckChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent alignments table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history"></i> 10 Most Recent Alignments</span>
+        <a href="{% url 'reports' %}" class="btn btn-sm btn-outline-secondary">View All Reports</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Truck ID</th>
+                        <th>Trailer ID</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Mileage</th>
+                        <th>Technician</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in recent_alignments %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ a.truck_id }}</span></td>
+                        <td>{{ a.trailer_id|default:"—" }}</td>
+                        <td>{{ a.alignment_date }}</td>
+                        <td>{{ a.alignment_time }}</td>
+                        <td>{{ a.mileage }} mi</td>
+                        <td>{{ a.tech_name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No alignment records yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const techLabels = {{ tech_labels|safe }};
+    const techData = {{ tech_data|safe }};
+    const truckLabels = {{ truck_labels|safe }};
+    const truckData = {{ truck_data|safe }};
+
+    const donutPalette = [
+        '#39c43c', '#0d6efd', '#fd7e14', '#dc3545', '#6f42c1',
+        '#20c997', '#ffc107', '#0dcaf0', '#e83e8c', '#6c757d',
+        '#198754', '#adb5bd',
+    ];
+
+    new Chart(document.getElementById('techChart'), {
+        type: 'doughnut',
+        data: {
+            labels: techLabels,
+            datasets: [{
+                label: 'Alignments',
+                data: techData,
+                backgroundColor: techLabels.map((_, i) => donutPalette[i % donutPalette.length]),
+                borderColor: '#fff',
+                borderWidth: 2,
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '62%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 12, padding: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total ? Math.round((ctx.parsed / total) * 100) : 0;
+                            return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('truckChart'), {
+        type: 'bar',
+        data: {
+            labels: truckLabels,
+            datasets: [{
+                label: 'Alignments',
+                data: truckData,
+                backgroundColor: '#fd7e14',
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+</script>
+{% endblock %}

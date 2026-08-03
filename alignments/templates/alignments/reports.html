@@ -1,0 +1,110 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}Reports | D&amp;A Hauliers Ltd{% endblock %}
+
+{% block content %}
+{% load static %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h2 class="mb-0">Reports</h2>
+        <p class="text-muted mb-0">Filter, export, and manage alignment records</p>
+    </div>
+</div>
+
+<!-- Filter form -->
+<div class="card mb-4 no-print">
+    <div class="card-header"><i class="bi bi-funnel"></i> Filters</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                {{ form.start_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                {{ form.end_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Technician</label>
+                {{ form.tech_name }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Truck ID</label>
+                {{ form.truck_id }}
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Apply Filters</button>
+                <a href="{% url 'reports' %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Export / Print buttons -->
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <span class="text-muted">{{ result_count }} record{{ result_count|pluralize }} found</span>
+    <div class="d-flex gap-2">
+        <a class="btn btn-success btn-sm" href="{% url 'export_excel' %}?{{ querystring }}">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </a>
+        <a class="btn btn-outline-success btn-sm" href="{% url 'export_csv' %}?{{ querystring }}">
+            <i class="bi bi-file-earmark-text"></i> Export CSV
+        </a>
+        <a class="btn btn-outline-danger btn-sm" href="{% url 'export_pdf' %}?{{ querystring }}">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </a>
+        <button class="btn btn-outline-dark btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-none d-print-block">
+        <img src="{% static 'alignments/img/logo-black.png' %}" alt="D&amp;A Hauliers Ltd" style="height:50px;">
+        <h4 class="mt-2 mb-0">D&amp;A Hauliers Ltd &mdash; Truck Alignment Report</h4>
+        <small>Generated {% now "N j, Y g:i A" %}</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Truck ID</th>
+                        <th>Trailer ID</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Mileage</th>
+                        <th>Technician</th>
+                        <th class="no-print">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alignments %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ a.truck_id }}</span></td>
+                        <td>{{ a.trailer_id|default:"—" }}</td>
+                        <td>{{ a.alignment_date }}</td>
+                        <td>{{ a.alignment_time }}</td>
+                        <td>{{ a.mileage }} mi</td>
+                        <td>{{ a.tech_name }}</td>
+                        <td class="no-print">
+                            <a href="{% url 'edit_alignment' a.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="{% url 'delete_alignment' a.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No records match the selected filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

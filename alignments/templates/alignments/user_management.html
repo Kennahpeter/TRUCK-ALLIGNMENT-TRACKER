@@ -1,0 +1,104 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}Manage Users | D&amp;A Hauliers Ltd{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card form-card">
+            <div class="card-header">
+                <i class="bi bi-person-plus"></i> Add New User
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_user">
+                    <div class="mb-3">
+                        <label class="form-label">Username *</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password *</label>
+                        <input type="password" name="password" class="form-control" minlength="6" required>
+                        <div class="form-text">Minimum 6 characters.</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="is_staff" class="form-check-input" id="id_is_staff">
+                        <label class="form-check-label" for="id_is_staff">
+                            Admin access (can manage users)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-save"></i> Create User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card form-card">
+            <div class="card-header">
+                <i class="bi bi-people"></i> Existing Users
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>{{ u.username }}{% if u == request.user %} <span class="badge bg-secondary">you</span>{% endif %}</td>
+                            <td>
+                                {% if u.is_superuser %}
+                                    <span class="badge bg-dark">Superuser</span>
+                                {% elif u.is_staff %}
+                                    <span class="badge bg-success">Admin</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Technician</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="text-success"><i class="bi bi-check-circle"></i> Active</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="bi bi-slash-circle"></i> Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if u != request.user %}
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_active">
+                                    <input type="hidden" name="user_id" value="{{ u.pk }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                                    </button>
+                                </form>
+                                <form method="post" class="d-inline" onsubmit="return confirm('Delete user {{ u.username }}? This cannot be undone.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="user_id" value="{{ u.pk }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                    <span class="text-muted small">&mdash;</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

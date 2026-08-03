@@ -1,0 +1,24 @@
+databases:
+  - name: truck-alignment-db
+    plan: free
+
+services:
+  - type: web
+    name: truck-alignment-tracker
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn truck_alignment_tracker.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: truck-alignment-db
+          property: connectionString
+      - key: WEB_CONCURRENCY
+        value: "4"
