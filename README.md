@@ -96,23 +96,35 @@ truck_alignment_tracker/
   falls back to local SQLite otherwise.
 - Mileage is validated server-side to require a positive number.
 
-## Deploying to Render
+## Database: Neon PostgreSQL (free, doesn't expire)
 
-This project is ready to deploy to [Render](https://render.com) as-is —
-it includes `render.yaml`, `build.sh`, and production-ready settings
-(Postgres support, WhiteNoise for static files, Gunicorn as the app server).
+This project uses **Neon** for its database rather than Render's own
+built-in Postgres. Render's free Postgres expires 30 days after creation;
+Neon's free tier is a permanent (non-trial) plan, so your fleet alignment
+records won't be at risk of being deleted.
 
-### Option A — Blueprint (one click, recommended)
+### 1. Create the Neon database
 
-1. Push this project to a GitHub (or GitLab) repository.
+1. Go to [neon.tech](https://neon.tech) and sign up (no credit card needed).
+2. Click **Create a project**. Name it something like `truck-alignment-tracker`.
+3. Once created, Neon shows a **connection string** that looks like:
+   ```
+   postgresql://username:password@ep-xxxx-xxxx.region.aws.neon.tech/dbname?sslmode=require
+   ```
+4. Copy that full string — you'll paste it into Render in the next step.
+
+### 2. Deploy to Render
+
+1. Push this project to GitHub (see below if you haven't yet).
 2. In the Render dashboard, click **New +** → **Blueprint**.
-3. Connect your repository. Render will detect `render.yaml` and set up:
-   - A **free PostgreSQL database**
-   - A **web service** running `gunicorn`, with `SECRET_KEY` auto-generated
-     and `DATABASE_URL` wired to the database automatically.
-4. Click **Apply** — Render will build and deploy automatically. The build
+3. Connect your repository. Render reads `render.yaml` and sets up a
+   **web service** running `gunicorn`, with `SECRET_KEY` auto-generated.
+   It will also prompt you for a `DATABASE_URL` value — this is where you
+   paste the Neon connection string you copied above.
+4. Click **Apply**. Render builds and deploys automatically — the build
    step (`build.sh`) installs dependencies, collects static files, and
-   runs migrations (which also seeds the 51-truck fleet).
+   runs migrations against your Neon database (which also seeds the
+   51-truck fleet).
 5. Once deployed, open the **Shell** tab for your service on Render and run:
    ```bash
    python manage.py createsuperuser
@@ -120,30 +132,36 @@ it includes `render.yaml`, `build.sh`, and production-ready settings
    to create your first admin login.
 6. Visit `https://<your-app-name>.onrender.com/login/` and sign in.
 
-### Option B — Manual web service
+If you ever need to find or reset your `DATABASE_URL` on Render afterward:
+your service's **Environment** tab → edit the `DATABASE_URL` variable.
+
+### Manual web service (alternative to Blueprint)
 
 1. Push this project to GitHub.
 2. In Render: **New +** → **Web Service** → connect your repo.
 3. Set:
    - **Build Command**: `./build.sh`
    - **Start Command**: `gunicorn truck_alignment_tracker.wsgi:application`
-4. Add a **PostgreSQL** database (New + → PostgreSQL), then copy its
-   **Internal Database URL** into your web service's environment variables
-   as `DATABASE_URL`.
-5. Add these environment variables on the web service:
+4. Add these environment variables on the web service:
+   - `DATABASE_URL` — your Neon connection string from step 1 above
    - `SECRET_KEY` — any long random string
    - `DEBUG` — `False`
    - `PYTHON_VERSION` — `3.12.0` (or your preferred 3.10+ version)
-6. Deploy, then use the **Shell** tab to run `python manage.py createsuperuser`.
+5. Deploy, then use the **Shell** tab to run `python manage.py createsuperuser`.
 
-### Notes on Render's free tier
+### Notes on the free setup
 
-- Free web services **spin down after inactivity** and take ~30–60 seconds
-  to wake up on the next request — normal for a low-traffic internal tool.
-- Free Postgres databases on Render **expire after 90 days** unless
-  upgraded to a paid plan; export your data or upgrade before then if this
-  is used for real fleet records.
-- Uploaded/generated files (like exported reports) are not persisted
-  across deploys on Render's free tier, since it doesn't have a persistent
-  disk. This app doesn't write files to disk at runtime (exports stream
-  directly to the browser), so this isn't an issue for the current features.
+- Render's free web service **spins down after ~15 minutes of inactivity**
+  and takes ~30–60 seconds to wake up on the next request — normal for a
+  low-traffic internal tool, and doesn't put your data at risk since the
+  app itself holds no data (it's all in Neon).
+- Neon's free tier gives **0.5 GB storage and 100 compute-hours a month**,
+  with the database scaling to zero when idle (a ~300–500ms delay on the
+  first query after idle time) — plenty for this app's usage. It does
+  **not** expire.
+- Uploaded/generated files (like exported reports) are not persisted on
+  disk on Render's free tier. This app doesn't need that — exports stream
+  directly to the browser rather than being saved server-side.
+- If usage grows significantly (many technicians, heavy daily use), revisit
+  both Render's and Neon's paid tiers — but for a single-fleet internal
+  tool like this, the free combination should hold up well.
