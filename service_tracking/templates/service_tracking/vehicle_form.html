@@ -1,0 +1,61 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}{% if is_edit %}Edit Vehicle{% else %}Add Vehicle{% endif %} | Service Tracking{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="mb-0">{% if is_edit %}Edit {{ vehicle.registration }}{% else %}Add Vehicle{% endif %}</h2>
+    <p class="text-muted mb-0">{% if not is_edit %}Choose a truck from the fleet register to build a service profile for it.{% endif %}</p>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Fleet Truck / Registration</label>
+                {{ form.truck }}
+                {% if form.truck.errors %}<div class="text-danger small">{{ form.truck.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Customer</label>
+                {{ form.customer }}
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Fleet Number</label>
+                    {{ form.fleet_number }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Vehicle Type</label>
+                    {{ form.vehicle_type }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Make</label>
+                    {{ form.make }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Model</label>
+                    {{ form.model }}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Driver</label>
+                {{ form.driver_name }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                {{ form.notes }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form.active }}
+                <label class="form-check-label">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Save Vehicle</button>
+            <a href="{% url 'service_tracking:vehicle_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

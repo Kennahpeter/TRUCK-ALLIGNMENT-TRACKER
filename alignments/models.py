@@ -13,6 +13,21 @@ class Truck(models.Model):
     trailer_id = models.CharField(max_length=20, blank=True, null=True)
     active = models.BooleanField(default=True, help_text="Uncheck to retire a unit from the dropdowns.")
 
+    # --- Service Tracking fields (added for the Vehicle Service Tracking module) ---
+    current_odometer = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Most recent known odometer reading (KM). Kept in sync by Service Tracking mileage updates.",
+    )
+    last_service_km = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Odometer reading (KM) at the truck's most recent service.",
+    )
+    last_service_date = models.DateField(null=True, blank=True)
+    service_interval_km = models.PositiveIntegerField(
+        default=15000,
+        help_text="KM between scheduled preventive services for this unit.",
+    )
+
     class Meta:
         ordering = ['truck_id']
         verbose_name = "Fleet Truck"

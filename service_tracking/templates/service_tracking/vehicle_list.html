@@ -1,0 +1,101 @@
+{% extends "alignments/base.html" %}
+
+{% block title %}Service Tracking | D&amp;A Hauliers Ltd{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Vehicle Service Tracking</h2>
+        <p class="text-muted mb-0">15,000 KM preventive service cycle &mdash; live status per vehicle</p>
+    </div>
+    <a href="{% url 'service_tracking:vehicle_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Vehicle
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-funnel"></i> Filters</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Reg, fleet #, driver">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Customer</label>
+                <select name="customer" class="form-select">
+                    <option value="">All Customers</option>
+                    {% for c in customers %}
+                        <option value="{{ c.pk }}" {% if selected_customer|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    {% for s in status_choices %}
+                        <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 form-check ms-2">
+                <input type="checkbox" name="active" value="1" class="form-check-input" id="activeOnly" {% if active_only %}checked{% endif %}>
+                <label class="form-check-label" for="activeOnly">Active vehicles only</label>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Apply</button>
+                <a href="{% url 'service_tracking:vehicle_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+        <thead>
+            <tr>
+                <th>Registration</th>
+                <th>Customer</th>
+                <th>Current KM</th>
+                <th>Last Service KM</th>
+                <th>Next Service KM</th>
+                <th>Remaining</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+            <tr>
+                <td><a href="{% url 'service_tracking:vehicle_detail' row.vehicle.pk %}">{{ row.vehicle.registration }}</a>
+                    {% if row.stale %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Mileage not updated recently"></i>{% endif %}
+                </td>
+                <td>{{ row.vehicle.customer|default:"—" }}</td>
+                <td>{% if row.vehicle.current_km %}{{ row.vehicle.current_km|floatformat:0 }} KM{% else %}—{% endif %}</td>
+                <td>{% if row.vehicle.last_service_km %}{{ row.vehicle.last_service_km|floatformat:0 }} KM{% else %}—{% endif %}</td>
+                <td>{{ row.vehicle.next_service_km|floatformat:0 }} KM</td>
+                <td>
+                    {% if row.vehicle.km_remaining is not None %}
+                        {% if row.vehicle.km_remaining < 0 %}
+                            <span class="text-danger">{{ row.vehicle.km_overdue|floatformat:0 }} KM overdue</span>
+                        {% else %}
+                            {{ row.vehicle.km_remaining|floatformat:0 }} KM
+                        {% endif %}
+                    {% else %}—{% endif %}
+                </td>
+                <td><span class="badge bg-{{ row.status_color }}">{{ row.status_label }}</span></td>
+                <td>
+                    <a href="{% url 'service_tracking:vehicle_detail' row.vehicle.pk %}" class="btn btn-sm btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'service_tracking:vehicle_edit' row.vehicle.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'service_tracking:mileage_update' row.vehicle.pk %}" class="btn btn-sm btn-outline-primary" title="Update Mileage"><i class="bi bi-speedometer2"></i></a>
+                    <a href="{% url 'service_tracking:service_record_add' row.vehicle.pk %}" class="btn btn-sm btn-outline-success" title="Record Service"><i class="bi bi-wrench"></i></a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No vehicles match the selected filters.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
